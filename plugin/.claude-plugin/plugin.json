@@ -1,0 +1,6 @@
+{
+  "name": "metodo-vibe-coding",
+  "version": "0.1.0",
+  "description": "Orquestador del método Loop (Claude construye, Codex audita) para apps en Apps Script + Sheets o con servidor (Next.js + Convex + Railway).",
+  "author": { "name": "jmbotian-vc" }
+}

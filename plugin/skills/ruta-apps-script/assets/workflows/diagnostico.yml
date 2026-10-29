@@ -1,0 +1,26 @@
+# Solo lectura: lista las implementaciones y versiones del proyecto de Apps
+# Script. Se lanza al cambiar .github/ordenes/diagnostico.txt.
+name: Diagnóstico de implementaciones
+
+on:
+  push:
+    branches: [main, 'claude/**']
+    paths: ['.github/ordenes/diagnostico.txt']
+
+jobs:
+  listar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Credenciales de clasp
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: printf '%s' "$CLASPRC_JSON" > ~/.clasprc.json
+      - name: Implementaciones y versiones
+        run: |
+          mkdir p && cd p
+          echo '{"scriptId":"__SCRIPT_ID__","rootDir":"."}' > .clasp.json
+          npx -y @google/clasp list-deployments
+          npx -y @google/clasp list-versions | tail -15

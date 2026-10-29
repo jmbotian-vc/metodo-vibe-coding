@@ -1,0 +1,63 @@
+# Publica en la URL /exec (la que usan todos) la versión del código de este
+# commit. Se lanza de dos formas:
+#  - cambiando .github/ordenes/publicar.txt (así lo hace Claude; su contenido
+#    es la descripción de la versión);
+#  - con el botón «Run workflow» de la pestaña Actions.
+# Crea una versión nueva de Apps Script y actualiza la MISMA implementación, de
+# modo que la URL /exec no cambia. Usa el secreto CLASPRC_JSON.
+name: Publicar en /exec
+
+on:
+  push:
+    branches: [main, 'claude/**']
+    paths: ['.github/ordenes/publicar.txt']
+  workflow_dispatch:
+    inputs:
+      descripcion:
+        description: 'Descripción de la versión'
+        required: false
+        default: 'Publicación desde GitHub'
+
+concurrency:
+  group: apps-script
+  cancel-in-progress: false
+
+env:
+  SCRIPT_ID: __SCRIPT_ID__
+  DEPLOYMENT_ID: __DEPLOYMENT_ID__
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Pruebas (si fallan no se publica nada)
+        run: node tests/run.js
+      - name: Credenciales de clasp
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          if [ -z "$CLASPRC_JSON" ]; then echo "Falta el secreto CLASPRC_JSON"; exit 1; fi
+          printf '%s' "$CLASPRC_JSON" > ~/.clasprc.json
+      - name: Subir el código de este commit
+        working-directory: apps-script
+        run: |
+          echo "{\"scriptId\":\"$SCRIPT_ID\",\"rootDir\":\".\"}" > .clasp.json
+          npx -y @google/clasp push --force
+      - name: Crear versión y actualizar la implementación /exec
+        working-directory: apps-script
+        env:
+          DESCRIPCION: ${{ github.event.inputs.descripcion }}
+        run: |
+          [ -z "$DESCRIPCION" ] && DESCRIPCION=$(head -1 ../.github/ordenes/publicar.txt 2>/dev/null)
+          DESC="${DESCRIPCION:-Publicación} · $(git rev-parse --short HEAD)"
+          SALIDA=$(npx -y @google/clasp create-version "$DESC")
+          echo "$SALIDA"
+          VERSION=$(echo "$SALIDA" | grep -oE '[0-9]+' | tail -1)
+          if [ -z "$VERSION" ]; then echo "No se pudo leer el número de versión"; exit 1; fi
+          npx -y @google/clasp update-deployment "$DEPLOYMENT_ID" -V "$VERSION" -d "$DESC"
+          npx -y @google/clasp list-deployments
+          echo "Publicada la versión $VERSION en https://script.google.com/macros/s/$DEPLOYMENT_ID/exec"

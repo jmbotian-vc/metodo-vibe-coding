@@ -1,0 +1,37 @@
+# Sube apps-script/ al proyecto de Apps Script con clasp en cada push.
+# Solo actualiza el código de pruebas (URL /dev); la URL /exec que usan los
+# demás no cambia hasta que se publique una versión nueva.
+# Requiere el secreto CLASPRC_JSON con el contenido de ~/.clasprc.json.
+name: Subir a Apps Script
+
+on:
+  push:
+    branches: [main, 'claude/**']
+    paths: ['apps-script/**', 'tests/**', '.github/workflows/apps-script.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: apps-script
+  cancel-in-progress: false
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Pruebas (datos inventados; si fallan no se sube nada)
+        run: node tests/run.js
+      - name: Credenciales de clasp
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          if [ -z "$CLASPRC_JSON" ]; then echo "Falta el secreto CLASPRC_JSON"; exit 1; fi
+          printf '%s' "$CLASPRC_JSON" > ~/.clasprc.json
+      - name: clasp push
+        working-directory: apps-script
+        run: |
+          echo '{"scriptId":"__SCRIPT_ID__","rootDir":"."}' > .clasp.json
+          npx -y @google/clasp push --force

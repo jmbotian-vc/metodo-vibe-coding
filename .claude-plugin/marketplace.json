@@ -1,0 +1,14 @@
+{
+  "name": "jmbotian",
+  "description": "Plugins personales de jmbotian-vc para construir apps con el método Loop.",
+  "owner": {
+    "name": "jmbotian-vc"
+  },
+  "plugins": [
+    {
+      "name": "metodo-vibe-coding",
+      "source": "./plugin",
+      "description": "Orquestador del método Loop (Claude construye, Codex audita) para apps en Apps Script + Sheets o con servidor (Next.js + Convex + Railway)."
+    }
+  ]
+}

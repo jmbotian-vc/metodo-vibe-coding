@@ -1,0 +1,14 @@
+# Temporales y material de apoyo para la IA
+tmp/
+
+# Configuración local de Apps Script / editores
+.clasp.json
+.claspignore
+
+# Secretos
+.clasprc.json
+*.local
+*.secret
+*.key
+.env
+.env.*
